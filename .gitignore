@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+myenv/
+
+.streamlit/
+*.toml
+
 # Distribution / packaging
 .Python
 build/
