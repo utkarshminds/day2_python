@@ -1,34 +1,57 @@
 import pandas
-import numpy
-import matplotlib.pyplot as plt
+import hmac
 import streamlit as st
 
-#from folder_name.file_name import function_name
+from services.call_open_ai import call_open_ai
 
-from services.apply_ttest import apply_ttest
-from services.apply_chisquare import apply_chisquare
 
-st.set_option('deprecation.showPyplotGlobalUse', False)
+def check_password():
+    """Returns `True` if the user had a correct password."""
 
-st.title('Automatic Statistical Tester')
+    def login_form():
+        """Form with widgets to collect user information"""
+        with st.form("Credentials"):
+            st.text_input("Username", key="username")
+            st.text_input("Password", type="password", key="password")
+            st.form_submit_button("Log in", on_click=password_entered)
 
-uploaded_file = st.file_uploader('Upload CSV file', type=['csv'])
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["username"] in st.secrets[
+            "passwords"
+        ] and hmac.compare_digest(
+            st.session_state["password"],
+            st.secrets.passwords[st.session_state["username"]],
+        ):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the username or password.
+            del st.session_state["username"]
+        else:
+            st.session_state["password_correct"] = False
 
-if uploaded_file is not None:
+    # Return True if the username + password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
 
-    df = pandas.read_csv(uploaded_file)
+    # Show inputs for username + password.
+    login_form()
+    if "password_correct" in st.session_state:
+        st.error("😕 User not known or password incorrect")
+    return False
 
-    #st.write(df)
 
-    columns_names = df.columns.tolist()
+if not check_password():
+    st.stop()
 
-    selected_col = st.selectbox('Select a column', columns_names)
+st.title('Vacation planner')
 
-    if pandas.api.types.is_numeric_dtype(df[selected_col]):
-        
-        #function_name(data)
-        apply_ttest(df[selected_col])
+city_name = st.text_input("Enter name of city")
+st.write("City", city_name)
 
-    else:
+num_days = st.text_input("Enter number of days")
+st.write("Days", num_days)
 
-        apply_chisquare(df[selected_col])
+if st.button("Call Open AI"):
+    st.write("Button clicked")
+
+    call_open_ai(city_name, num_days)
